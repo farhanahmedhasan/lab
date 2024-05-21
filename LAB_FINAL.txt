@@ -1,0 +1,257 @@
+                     FCFS
+
+#!/bin/bash
+
+# Define processes (arrival time and burst time)
+processes=("P1" "P2" "P3" "P4")
+arrival_times=(0 1 2 3)
+burst_times=(8 4 9 5)
+
+num_processes=${#processes[@]}
+
+# Arrays to hold the calculated times
+waiting_times=()
+turnaround_times=()
+
+# Initialize total waiting and turnaround time
+total_waiting_time=0
+total_turnaround_time=0
+
+# Function to calculate waiting and turnaround times
+calculate_times() {
+    waiting_times=()
+    turnaround_times=()
+    total_waiting_time=0
+    total_turnaround_time=0
+    local start_time=0
+
+    for (( i=0; i<$num_processes; i++ )); do
+        local arrival_time=${arrival_times[$i]}
+        local burst_time=${burst_times[$i]}
+        
+        if (( start_time < arrival_time )); then
+            start_time=$arrival_time
+        fi
+
+        local waiting_time=$(( start_time - arrival_time ))
+        local turnaround_time=$(( waiting_time + burst_time ))
+
+        waiting_times+=($waiting_time)
+        turnaround_times+=($turnaround_time)
+
+        total_waiting_time=$(( total_waiting_time + waiting_time ))
+        total_turnaround_time=$(( total_turnaround_time + turnaround_time ))
+
+        start_time=$(( start_time + burst_time ))
+    done
+}
+
+# Function to display the results
+display_results() {
+    echo "Process  Arrival  Burst  Waiting  Turnaround"
+    for (( i=0; i<$num_processes; i++ )); do
+        echo "${processes[$i]}       ${arrival_times[$i]}       ${burst_times[$i]}       ${waiting_times[$i]}       ${turnaround_times[$i]}"
+    done
+
+    local average_waiting_time=$(echo "scale=2; $total_waiting_time / $num_processes" | bc)
+    local average_turnaround_time=$(echo "scale=2; $total_turnaround_time / $num_processes" | bc)
+
+    echo "Average Waiting Time: $average_waiting_time"
+    echo "Average Turnaround Time: $average_turnaround_time"
+}
+
+# Main execution
+calculate_times
+display_results                                 
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                 SJF
+
+
+                                  
+#!/bin/bash
+
+# Define processes (arrival time and burst time)
+processes=("P1" "P2" "P3" "P4")
+arrival_times=(0 1 2 3)
+burst_times=(8 4 9 5)
+
+num_processes=${#processes[@]}
+
+# Arrays to hold the calculated times
+waiting_times=()
+turnaround_times=()
+
+# Initialize total waiting and turnaround time
+total_waiting_time=0
+total_turnaround_time=0
+
+# Function to calculate waiting and turnaround times using SJF
+calculate_sjf_times() {
+    waiting_times=()
+    turnaround_times=()
+    total_waiting_time=0
+    total_turnaround_time=0
+    local current_time=0
+    local completed=0
+    local process_indices=($(seq 0 $((num_processes - 1))))
+
+    while (( completed < num_processes )); do
+        local min_burst_time=1000000
+        local shortest_process=-1
+
+        for i in "${process_indices[@]}"; do
+            if (( arrival_times[i] <= current_time )) && (( burst_times[i] < min_burst_time )); then
+                min_burst_time=${burst_times[i]}
+                shortest_process=$i
+            fi
+        done
+
+        if (( shortest_process == -1 )); then
+            current_time=$(( current_time + 1 ))
+            continue
+        fi
+
+        local waiting_time=$(( current_time - arrival_times[shortest_process] ))
+        local turnaround_time=$(( waiting_time + burst_times[shortest_process] ))
+
+        waiting_times[shortest_process]=$waiting_time
+        turnaround_times[shortest_process]=$turnaround_time
+
+        total_waiting_time=$(( total_waiting_time + waiting_time ))
+        total_turnaround_time=$(( total_turnaround_time + turnaround_time ))
+
+        current_time=$(( current_time + burst_times[shortest_process] ))
+        completed=$(( completed + 1 ))
+
+        # Remove the completed process from the indices list
+        process_indices=(${process_indices[@]/$shortest_process})
+    done
+}
+
+# Function to display the results
+display_results() {
+    echo "Process  Arrival  Burst  Waiting  Turnaround"
+    for (( i=0; i<$num_processes; i++ )); do
+        echo "${processes[$i]}       ${arrival_times[$i]}       ${burst_times[$i]}       ${waiting_times[$i]}       ${turnaround_times[$i]}"
+    done
+
+    local average_waiting_time=$(echo "scale=2; $total_waiting_time / $num_processes" | bc)
+    local average_turnaround_time=$(echo "scale=2; $total_turnaround_time / $num_processes" | bc)
+
+    echo "Average Waiting Time: $average_waiting_time"
+    echo "Average Turnaround Time: $average_turnaround_time"
+}
+
+# Main execution
+calculate_sjf_times
+display_results
+                                      
+                              
+
+
+    
+                                  Round Roubin
+                                  
+ #!/bin/bash
+
+# Define processes (arrival time and burst time)
+processes=("P1" "P2" "P3" "P4")
+arrival_times=(0 1 2 3)
+burst_times=(8 4 9 5)
+time_quantum=3
+
+num_processes=${#processes[@]}
+
+# Arrays to hold the calculated times
+waiting_times=()
+turnaround_times=()
+
+# Initialize total waiting and turnaround time
+total_waiting_time=0
+total_turnaround_time=0
+
+# Function to calculate waiting and turnaround times using Round Robin
+calculate_round_robin_times() {
+    waiting_times=()
+    turnaround_times=()
+    total_waiting_time=0
+    total_turnaround_time=0
+
+    local remaining_burst_times=("${burst_times[@]}")
+    local current_time=0
+
+    while true; do
+        local all_processes_completed=true
+
+        for ((i=0; i<num_processes; i++)); do
+            if ((remaining_burst_times[i] > 0)); then
+                all_processes_completed=false
+
+                local burst_time=${burst_times[i]}
+                local time_slice=$((burst_time < time_quantum ? burst_time : time_quantum))
+
+                current_time=$((current_time + time_slice))
+                remaining_burst_times[i]=$((remaining_burst_times[i] - time_slice))
+
+                if ((remaining_burst_times[i] == 0)); then
+                    local waiting_time=$((current_time - arrival_times[i] - burst_time))
+                    local turnaround_time=$((waiting_time + burst_time))
+
+                    waiting_times[$i]=$waiting_time
+                    turnaround_times[$i]=$turnaround_time
+
+                    total_waiting_time=$((total_waiting_time + waiting_time))
+                    total_turnaround_time=$((total_turnaround_time + turnaround_time))
+                fi
+            fi
+        done
+
+        if $all_processes_completed; then
+            break
+        fi
+    done
+}
+
+# Function to display the results
+display_results() {
+    echo "Process  Arrival  Burst  Waiting  Turnaround"
+    for ((i=0; i<num_processes; i++)); do
+        echo "${processes[$i]}       ${arrival_times[$i]}       ${burst_times[$i]}       ${waiting_times[$i]}       ${turnaround_times[$i]}"
+    done
+
+    local average_waiting_time=$(echo "scale=2; $total_waiting_time / $num_processes" | bc)
+    local average_turnaround_time=$(echo "scale=2; $total_turnaround_time / $num_processes" | bc)
+
+    echo "Average Waiting Time: $average_waiting_time"
+    echo "Average Turnaround Time: $average_turnaround_time"
+}
+
+# Main execution
+calculate_round_robin_times
+display_results
+                                 
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+               
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
+                                  
